@@ -93,13 +93,12 @@ int main(int argc, char **argv)
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
-    // log min and max values
-    std::cout << "minX: " << obj.getMinX() << std::endl;
-    std::cout << "maxX: " << obj.getMaxX() << std::endl;
-    std::cout << "minY: " << obj.getMinY() << std::endl;
-    std::cout << "maxY: " << obj.getMaxY() << std::endl;
-    std::cout << "minZ: " << obj.getMinZ() << std::endl;
-    std::cout << "maxZ: " << obj.getMaxZ() << std::endl;
+    GLfloat width = obj.getMaxX() - obj.getMinX();
+    GLfloat height = obj.getMaxY() - obj.getMinY();
+    GLfloat depth = obj.getMaxZ() - obj.getMinZ();
+    GLfloat scaleFactor = std::max(std::max(width, height), depth) / 2.0f;
+
+    std::cout << width << " " << height << " " << depth << std::endl;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -110,11 +109,7 @@ int main(int argc, char **argv)
         glUseProgram(program);
         glBindVertexArray(vao);
 
-        GLfloat maxCoord = std::max(obj.getMaxX(), std::max(obj.getMaxY(), obj.getMaxZ()));
-        GLfloat minCoord = std::min(obj.getMinX(), std::min(obj.getMinY(), obj.getMinZ()));
-        GLfloat scaleFactor = std::max(std::abs(maxCoord), std::abs(minCoord));
-
-        Mat4 modelToCameraMatrix = 
+        Mat4 modelToCameraMatrix =
             Mat4::translate(
                 -(obj.getMaxX() + obj.getMinX()) / 2.0f,
                 -(obj.getMaxY() + obj.getMinY()) / 2.0f,
@@ -122,7 +117,7 @@ int main(int argc, char **argv)
             ) *
             Mat4::scale(1 / scaleFactor, 1 / scaleFactor, 1 / scaleFactor) *
             Mat4::rotateY(computeRotationAngle(glfwGetTime(), 4.0)) *
-            Mat4::translate(0.0f, 0.0f, -scaleFactor);
+            Mat4::translate(0.0f, 0.0f, -scaleFactor - 1.0f);
         glUniformMatrix4fv(modelToCameraMatrixUniform, 1, GL_FALSE, modelToCameraMatrix.getData());
 
         glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
