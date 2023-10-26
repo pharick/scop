@@ -115,7 +115,7 @@ int main(int argc, char **argv)
             ) *
             Mat4::scale(1 / scaleFactor, 1 / scaleFactor, 1 / scaleFactor) *
             Mat4::rotateY(computeRotationAngle(glfwGetTime(), 4.0)) *
-            Mat4::translate(0.0f, 0.0f, -scaleFactor - 1.0f);
+            Mat4::translate(0.0f, 0.0f, -scaleFactor - 5.0f);
         glUniformMatrix4fv(modelToCameraMatrixUniform, 1, GL_FALSE, modelToCameraMatrix.getData());
 
         glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
