@@ -16,6 +16,9 @@ private:
     GLfloat _maxZ;
 
     void _parse(const std::string &path);
+    void _parseLine(const std::string &line);
+    void _parseVertex(const std::vector<std::string> &tokens);
+    void _parseFace(const std::vector<std::string> &tokens);
 
 public:
     ObjParser(const std::string &path);

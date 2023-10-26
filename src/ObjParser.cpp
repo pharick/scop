@@ -1,6 +1,12 @@
 #include "ObjParser.hpp"
 
-ObjParser::ObjParser(const std::string &path)
+ObjParser::ObjParser(const std::string &path) :
+    _minX(std::numeric_limits<GLfloat>::max()),
+    _maxX(std::numeric_limits<GLfloat>::min()),
+    _minY(std::numeric_limits<GLfloat>::max()),
+    _maxY(std::numeric_limits<GLfloat>::min()),
+    _minZ(std::numeric_limits<GLfloat>::max()),
+    _maxZ(std::numeric_limits<GLfloat>::min())
 {
     _parse(path);
 }
@@ -71,46 +77,50 @@ void ObjParser::_parse(const std::string &path)
     if (!file.is_open())
         throw std::runtime_error("Failed to open obj file: " + path);
 
-    _minX = std::numeric_limits<GLfloat>::max();
-    _maxX = std::numeric_limits<GLfloat>::min();
-    _minY = std::numeric_limits<GLfloat>::max();
-    _maxY = std::numeric_limits<GLfloat>::min();
-    _minZ = std::numeric_limits<GLfloat>::max();
-    _maxZ = std::numeric_limits<GLfloat>::min();
-
     // iterate over each line of the file
     for (std::string line; std::getline(file, line);)
     {
-        // split the line into tokens
-        std::istringstream iss(line);
-        std::vector<std::string> tokens{std::istream_iterator<std::string>{iss},
-                                        std::istream_iterator<std::string>{}};
-        // if the line is a vertex
-        if (tokens[0] == "v")
-        {
-            // add the vertex to the vertices vector
-            _vertices.push_back(std::stof(tokens[1]));
-            _vertices.push_back(std::stof(tokens[2]));
-            _vertices.push_back(std::stof(tokens[3]));
+        // remove comments
+        size_t commentPos = line.find('#');
+        if (commentPos != std::string::npos)
+            line = line.substr(0, commentPos);
+        if (!line.empty())
+            _parseLine(line);
+    }
+}
 
-            // update the min and max values
-            _minX = std::min(_minX, std::stof(tokens[1]));
-            _maxX = std::max(_maxX, std::stof(tokens[1]));
-            _minY = std::min(_minY, std::stof(tokens[2]));
-            _maxY = std::max(_maxY, std::stof(tokens[2]));
-            _minZ = std::min(_minZ, std::stof(tokens[3]));
-            _maxZ = std::max(_maxZ, std::stof(tokens[3]));
-        }
-        // if the line is a face
-        else if (tokens[0] == "f")
-        {
-            // split face into triangles
-            for (size_t i = 2; i < tokens.size() - 1; i++)
-            {
-                _indeces.push_back(std::stoi(tokens[1]) - 1);
-                _indeces.push_back(std::stoi(tokens[i]) - 1);
-                _indeces.push_back(std::stoi(tokens[i + 1]) - 1);
-            }
-        }
+void ObjParser::_parseLine(const std::string &line)
+{
+    std::istringstream iss(line);
+    std::vector<std::string> tokens{std::istream_iterator<std::string>{iss},
+                                    std::istream_iterator<std::string>{}};
+    if (tokens[0] == "v")
+        _parseVertex(tokens);
+    else if (tokens[0] == "f")
+        _parseFace(tokens);
+}
+
+void ObjParser::_parseVertex(const std::vector<std::string> &tokens)
+{
+    _vertices.push_back(std::stof(tokens[1]));
+    _vertices.push_back(std::stof(tokens[2]));
+    _vertices.push_back(std::stof(tokens[3]));
+
+    // update the min and max values
+    _minX = std::min(_minX, std::stof(tokens[1]));
+    _maxX = std::max(_maxX, std::stof(tokens[1]));
+    _minY = std::min(_minY, std::stof(tokens[2]));
+    _maxY = std::max(_maxY, std::stof(tokens[2]));
+    _minZ = std::min(_minZ, std::stof(tokens[3]));
+    _maxZ = std::max(_maxZ, std::stof(tokens[3]));
+}
+
+void ObjParser::_parseFace(const std::vector<std::string> &tokens)
+{
+    for (size_t i = 2; i < tokens.size() - 1; i++)
+    {
+        _indeces.push_back(std::stoi(tokens[1]) - 1);
+        _indeces.push_back(std::stoi(tokens[i]) - 1);
+        _indeces.push_back(std::stoi(tokens[i + 1]) - 1);
     }
 }

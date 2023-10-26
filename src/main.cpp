@@ -98,8 +98,6 @@ int main(int argc, char **argv)
     GLfloat depth = obj.getMaxZ() - obj.getMinZ();
     GLfloat scaleFactor = std::max(std::max(width, height), depth) / 2.0f;
 
-    std::cout << width << " " << height << " " << depth << std::endl;
-
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
