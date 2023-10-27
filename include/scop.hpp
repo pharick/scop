@@ -21,4 +21,37 @@
 
 #define SHADER_DIR "./shaders"
 
+#define ROTATION_STEP 0.1f
+
+struct ButtonsState
+{
+    bool w;
+    bool s;
+    bool a;
+    bool d;
+    bool r;
+    bool f;
+
+    ButtonsState() : w(false), s(false), a(false), d(false), r(false), f(false) {}
+};
+
+struct RotationAnglesState
+{
+    float x;
+    float y;
+    float z;
+
+    RotationAnglesState() : x(0.0f), y(0.0f), z(0.0f) {}
+};
+
+struct State
+{
+    ButtonsState buttonsState;
+    RotationAnglesState rotationAnglesState;
+
+    State() : buttonsState(), rotationAnglesState() {}
+};
+
+extern State state;
+
 #endif

@@ -3,6 +3,8 @@
 #include "ShaderProgramCompiler.hpp"
 #include "Matrix.hpp"
 
+State state;
+
 static void errorCallback(int error, const char *description)
 {
     (void)error;
@@ -16,11 +18,57 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height)
     glViewport(width / 2 - x / 2, height / 2 - x / 2, x, x);
 }
 
+void updateButtonState(bool &buttonState, int action)
+{
+    if (action == GLFW_PRESS)
+        buttonState = true;
+    else if (action == GLFW_RELEASE)
+        buttonState = false;
+}
+
+void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    (void)window;
+    (void)scancode;
+    (void)mods;
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    else if (key == GLFW_KEY_W)
+        updateButtonState(state.buttonsState.w, action);
+    else if (key == GLFW_KEY_S)
+        updateButtonState(state.buttonsState.s, action);
+    else if (key == GLFW_KEY_A)
+        updateButtonState(state.buttonsState.a, action);
+    else if (key == GLFW_KEY_D)
+        updateButtonState(state.buttonsState.d, action);
+    else if (key == GLFW_KEY_R)
+        updateButtonState(state.buttonsState.r, action);
+    else if (key == GLFW_KEY_F)
+        updateButtonState(state.buttonsState.f, action);
+}
+
 float computeRotationAngle(float elapsedTime, float loopDuration)
 {
     float scale = M_PI * 2.0f / loopDuration;
     float currentTimeThroughLoop = fmodf(elapsedTime, loopDuration);
     return currentTimeThroughLoop * scale;
+}
+
+void updateRotationAngles(RotationAnglesState &rotationAnglesState, const ButtonsState &buttonsState)
+{
+    if (buttonsState.w)
+        rotationAnglesState.x += ROTATION_STEP;
+    if (buttonsState.s)
+        rotationAnglesState.x -= ROTATION_STEP;
+    if (buttonsState.a)
+        rotationAnglesState.y += ROTATION_STEP;
+    if (buttonsState.d)
+        rotationAnglesState.y -= ROTATION_STEP;
+    if (buttonsState.r)
+        rotationAnglesState.z += ROTATION_STEP;
+    if (buttonsState.f)
+        rotationAnglesState.z -= ROTATION_STEP;
 }
 
 int main(int argc, char **argv)
@@ -96,7 +144,9 @@ int main(int argc, char **argv)
     GLfloat width = obj.getMaxX() - obj.getMinX();
     GLfloat height = obj.getMaxY() - obj.getMinY();
     GLfloat depth = obj.getMaxZ() - obj.getMinZ();
-    GLfloat scaleFactor = std::max(std::max(width, height), depth) / 2.0f;
+    GLfloat scaleFactor = std::max(std::max(width, height), depth);
+
+    glfwSetKeyCallback(window, keyCallback);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -113,15 +163,18 @@ int main(int argc, char **argv)
                 -(obj.getMaxY() + obj.getMinY()) / 2.0f,
                 -(obj.getMaxZ() + obj.getMinZ()) / 2.0f
             ) *
-            Mat4::scale(1 / scaleFactor, 1 / scaleFactor, 1 / scaleFactor) *
-            Mat4::rotateY(computeRotationAngle(glfwGetTime(), 4.0)) *
-            Mat4::translate(0.0f, 0.0f, -scaleFactor - 5.0f);
+            Mat4::rotateX(state.rotationAnglesState.x) *
+            Mat4::rotateY(state.rotationAnglesState.y) *
+            Mat4::rotateZ(state.rotationAnglesState.z) *
+            Mat4::translate(0.0f, 0.0f, -scaleFactor * 2.0f);
         glUniformMatrix4fv(modelToCameraMatrixUniform, 1, GL_FALSE, modelToCameraMatrix.getData());
 
         glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
         glUseProgram(0);
+
+        updateRotationAngles(state.rotationAnglesState, state.buttonsState);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
