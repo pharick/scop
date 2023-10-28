@@ -1,22 +1,26 @@
-#ifndef SHADER_PROGRAM_COMPILER_HPP
-#define SHADER_PROGRAM_COMPILER_HPP
+#ifndef SHADER_PROGRAM_HPP
+#define SHADER_PROGRAM_HPP
 
 #include "scop.hpp"
 
-class ShaderProgramCompiler
+class ShaderProgram
 {
 private:
     std::string         _shaderDir;
     std::vector<GLuint> _shaders;
+    GLuint              _program;
 
-    GLuint _compileShader(GLenum type, const std::string &data);
     GLuint _loadShader(GLenum type, const std::string &file);
+    GLuint _compileShader(GLenum type, const std::string &data);
+    GLuint _compileProgram();
 
 public:
-    ShaderProgramCompiler(const std::string &shaderDir);
+    ShaderProgram(const std::string &shaderDir);
+    ~ShaderProgram();
 
     void addShader(GLenum type, const std::string &file);
-    GLuint getLinkedProgram();
+    void use();
+    GLuint getUniformLocation(const std::string &name) const;
 };
 
 class ShaderException : public std::exception

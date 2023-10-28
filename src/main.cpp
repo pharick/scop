@@ -1,6 +1,6 @@
 #include "scop.hpp"
 #include "ObjParser.hpp"
-#include "ShaderProgramCompiler.hpp"
+#include "ShaderProgram.hpp"
 #include "Matrix.hpp"
 
 State state;
@@ -58,17 +58,17 @@ float computeRotationAngle(float elapsedTime, float loopDuration)
 void updateRotationAngles(RotationAnglesState &rotationAnglesState, const ButtonsState &buttonsState)
 {
     if (buttonsState.w)
-        rotationAnglesState.x += ROTATION_STEP;
-    if (buttonsState.s)
         rotationAnglesState.x -= ROTATION_STEP;
+    if (buttonsState.s)
+        rotationAnglesState.x += ROTATION_STEP;
     if (buttonsState.a)
-        rotationAnglesState.y += ROTATION_STEP;
-    if (buttonsState.d)
         rotationAnglesState.y -= ROTATION_STEP;
+    if (buttonsState.d)
+        rotationAnglesState.y += ROTATION_STEP;
     if (buttonsState.r)
-        rotationAnglesState.z += ROTATION_STEP;
-    if (buttonsState.f)
         rotationAnglesState.z -= ROTATION_STEP;
+    if (buttonsState.f)
+        rotationAnglesState.z += ROTATION_STEP;
 }
 
 int main(int argc, char **argv)
@@ -103,15 +103,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    ShaderProgramCompiler programCompiler(SHADER_DIR);
-    programCompiler.addShader(GL_VERTEX_SHADER, "shader.vert");
-    programCompiler.addShader(GL_FRAGMENT_SHADER, "shader.frag");
-    GLuint program = programCompiler.getLinkedProgram();
+    ShaderProgram program(SHADER_DIR);
+    program.addShader(GL_VERTEX_SHADER, "shader.vert");
+    program.addShader(GL_FRAGMENT_SHADER, "shader.frag");
 
     // init uniform variables
-    glUseProgram(program);
-    GLuint modelToCameraMatrixUniform = glGetUniformLocation(program, "modelToCameraMatrix");
-    GLuint cameraToClipMatrixUniform = glGetUniformLocation(program, "cameraToClipMatrix");
+    program.use();
+    GLuint modelToCameraMatrixUniform = program.getUniformLocation("modelToCameraMatrix");
+    GLuint cameraToClipMatrixUniform = program.getUniformLocation("cameraToClipMatrix");
 
     glUniformMatrix4fv(cameraToClipMatrixUniform, 1, GL_FALSE, Mat4::perspective(45.0f, 1.0f, 0.1f, 100.0f).getData());
     glUseProgram(0);
@@ -154,7 +153,7 @@ int main(int argc, char **argv)
         glClearDepth(1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glUseProgram(program);
+        program.use();
         glBindVertexArray(vao);
 
         Mat4 modelToCameraMatrix =
