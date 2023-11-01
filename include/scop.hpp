@@ -48,8 +48,9 @@ struct State
 {
     ButtonsState buttonsState;
     RotationAnglesState rotationAnglesState;
+    float lastButtonPressTime;
 
-    State() : buttonsState(), rotationAnglesState() {}
+    State() : buttonsState{}, rotationAnglesState{}, lastButtonPressTime{} {}
 };
 
 extern State state;

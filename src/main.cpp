@@ -25,6 +25,7 @@ void updateButtonState(bool &buttonState, int action)
         buttonState = true;
     else if (action == GLFW_RELEASE)
         buttonState = false;
+    state.lastButtonPressTime = glfwGetTime();
 }
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -53,7 +54,7 @@ float computeRotationAngle(float elapsedTime, float loopDuration)
 {
     float scale = M_PI * 2.0f / loopDuration;
     float currentTimeThroughLoop = fmodf(elapsedTime, loopDuration);
-    return currentTimeThroughLoop * scale;
+    return currentTimeThroughLoop * -scale;
 }
 
 void updateRotationAngles(RotationAnglesState &rotationAnglesState, const ButtonsState &buttonsState)
@@ -175,8 +176,17 @@ int main(int argc, char **argv)
 
         glBindVertexArray(0);
         glUseProgram(0);
-
-        updateRotationAngles(state.rotationAnglesState, state.buttonsState);
+        
+        if (state.lastButtonPressTime > 0 && glfwGetTime() - state.lastButtonPressTime < 10.0f)
+        {
+            updateRotationAngles(state.rotationAnglesState, state.buttonsState);
+        }
+        else
+        {
+            state.rotationAnglesState.x = 0.0f;
+            state.rotationAnglesState.y = computeRotationAngle(glfwGetTime(), 5.0f);
+            state.rotationAnglesState.z = 0.0f;
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
