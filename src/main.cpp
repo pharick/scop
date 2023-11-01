@@ -2,6 +2,7 @@
 #include "ObjParser.hpp"
 #include "ShaderProgram.hpp"
 #include "Matrix.hpp"
+#include "Quaternion.hpp"
 
 State state;
 
@@ -58,17 +59,17 @@ float computeRotationAngle(float elapsedTime, float loopDuration)
 void updateRotationAngles(RotationAnglesState &rotationAnglesState, const ButtonsState &buttonsState)
 {
     if (buttonsState.w)
-        rotationAnglesState.x -= ROTATION_STEP;
-    if (buttonsState.s)
         rotationAnglesState.x += ROTATION_STEP;
+    if (buttonsState.s)
+        rotationAnglesState.x -= ROTATION_STEP;
     if (buttonsState.a)
-        rotationAnglesState.y -= ROTATION_STEP;
-    if (buttonsState.d)
         rotationAnglesState.y += ROTATION_STEP;
+    if (buttonsState.d)
+        rotationAnglesState.y -= ROTATION_STEP;
     if (buttonsState.r)
-        rotationAnglesState.z -= ROTATION_STEP;
-    if (buttonsState.f)
         rotationAnglesState.z += ROTATION_STEP;
+    if (buttonsState.f)
+        rotationAnglesState.z -= ROTATION_STEP;
 }
 
 int main(int argc, char **argv)
@@ -156,15 +157,17 @@ int main(int argc, char **argv)
         program.use();
         glBindVertexArray(vao);
 
+        Quaternion q = Quaternion::xAxisRotation(state.rotationAnglesState.x) *
+                       Quaternion::yAxisRotation(state.rotationAnglesState.y) *
+                       Quaternion::zAxisRotation(state.rotationAnglesState.z);
+
         Mat4 modelToCameraMatrix =
             Mat4::translate(
                 -(obj.getMaxX() + obj.getMinX()) / 2.0f,
                 -(obj.getMaxY() + obj.getMinY()) / 2.0f,
                 -(obj.getMaxZ() + obj.getMinZ()) / 2.0f
             ) *
-            Mat4::rotateX(state.rotationAnglesState.x) *
-            Mat4::rotateY(state.rotationAnglesState.y) *
-            Mat4::rotateZ(state.rotationAnglesState.z) *
+            q.toMatrix() *
             Mat4::translate(0.0f, 0.0f, -scaleFactor * 2.0f);
         glUniformMatrix4fv(modelToCameraMatrixUniform, 1, GL_FALSE, modelToCameraMatrix.getData());
 
