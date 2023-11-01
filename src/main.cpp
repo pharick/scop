@@ -48,6 +48,18 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods
         updateButtonState(state.buttonsState.r, action);
     else if (key == GLFW_KEY_F)
         updateButtonState(state.buttonsState.f, action);
+    else if (key == GLFW_KEY_UP)
+        updateButtonState(state.buttonsState.up, action);
+    else if (key == GLFW_KEY_DOWN)
+        updateButtonState(state.buttonsState.down, action);
+    else if (key == GLFW_KEY_LEFT)
+        updateButtonState(state.buttonsState.left, action);
+    else if (key == GLFW_KEY_RIGHT)
+        updateButtonState(state.buttonsState.right, action);
+    else if (key == GLFW_KEY_LEFT_BRACKET)
+        updateButtonState(state.buttonsState.leftBracket, action);
+    else if (key == GLFW_KEY_RIGHT_BRACKET)
+        updateButtonState(state.buttonsState.rightBracket, action);
 }
 
 float computeRotationAngle(float elapsedTime, float loopDuration)
@@ -71,6 +83,22 @@ void updateRotationAngles(RotationAnglesState &rotationAnglesState, const Button
         rotationAnglesState.z += ROTATION_STEP;
     if (buttonsState.f)
         rotationAnglesState.z -= ROTATION_STEP;
+}
+
+void updateTranslationPosition(TranslationState &translationState, const ButtonsState &buttonsState)
+{
+    if (buttonsState.up)
+        translationState.y += TRANSLATION_STEP;
+    if (buttonsState.down)
+        translationState.y -= TRANSLATION_STEP;
+    if (buttonsState.left)
+        translationState.x -= TRANSLATION_STEP;
+    if (buttonsState.right)
+        translationState.x += TRANSLATION_STEP;
+    if (buttonsState.leftBracket)
+        translationState.z -= TRANSLATION_STEP;
+    if (buttonsState.rightBracket)
+        translationState.z += TRANSLATION_STEP;
 }
 
 int main(int argc, char **argv)
@@ -147,6 +175,8 @@ int main(int argc, char **argv)
     GLfloat depth = obj.getMaxZ() - obj.getMinZ();
     GLfloat scaleFactor = std::max(std::max(width, height), depth);
 
+    state.translationState.z = -scaleFactor * 2.0f;
+
     glfwSetKeyCallback(window, keyCallback);
 
     while (!glfwWindowShouldClose(window))
@@ -169,7 +199,7 @@ int main(int argc, char **argv)
                 -(obj.getMaxZ() + obj.getMinZ()) / 2.0f
             ) *
             q.toMatrix() *
-            Mat4::translate(0.0f, 0.0f, -scaleFactor * 2.0f);
+            Mat4::translate(state.translationState.x, state.translationState.y, state.translationState.z);
         glUniformMatrix4fv(modelToCameraMatrixUniform, 1, GL_FALSE, modelToCameraMatrix.getData());
 
         glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
@@ -177,6 +207,7 @@ int main(int argc, char **argv)
         glBindVertexArray(0);
         glUseProgram(0);
         
+        updateTranslationPosition(state.translationState, state.buttonsState);
         if (state.lastButtonPressTime > 0 && glfwGetTime() - state.lastButtonPressTime < 10.0f)
         {
             updateRotationAngles(state.rotationAnglesState, state.buttonsState);

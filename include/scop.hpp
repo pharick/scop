@@ -22,6 +22,7 @@
 #define SHADER_DIR "./shaders"
 
 #define ROTATION_STEP 0.1f
+#define TRANSLATION_STEP 0.1f
 
 struct ButtonsState
 {
@@ -31,6 +32,12 @@ struct ButtonsState
     bool d;
     bool r;
     bool f;
+    bool up;
+    bool down;
+    bool left;
+    bool right;
+    bool leftBracket;
+    bool rightBracket;
 
     ButtonsState() : w(false), s(false), a(false), d(false), r(false), f(false) {}
 };
@@ -44,10 +51,20 @@ struct RotationAnglesState
     RotationAnglesState() : x(0.0f), y(0.0f), z(0.0f) {}
 };
 
+struct TranslationState
+{
+    float x;
+    float y;
+    float z;
+
+    TranslationState() : x(0.0f), y(0.0f), z(0.0f) {}
+};
+
 struct State
 {
     ButtonsState buttonsState;
     RotationAnglesState rotationAnglesState;
+    TranslationState translationState;
     float lastButtonPressTime;
 
     State() : buttonsState{}, rotationAnglesState{}, lastButtonPressTime{} {}
