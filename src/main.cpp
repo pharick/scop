@@ -109,7 +109,9 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
         throw std::runtime_error("Usage: " + std::string(argv[0]) + " <obj file>");
+
     ObjParser obj(argv[1]);
+    BmpParser bmp("resources/texture.bmp");
 
     if (!glfwInit())
         return 1;
@@ -147,7 +149,6 @@ int main(int argc, char **argv)
     Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
     glUniformMatrix4fv(state.uniforms.cameraToClipMatrix, 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
-    std::cout << state.uniforms.modelToCameraMatrix << " " << state.uniforms.cameraToClipMatrix << std::endl;
 
     // init buffers
     GLuint vbo = obj.getVertexBufferObject();

@@ -2,7 +2,7 @@ TARGET_EXEC	= scop
 
 BUILD_DIR	= ./build
 SRC_DIR		= ./src
-SRC_FILES	= main.cpp ShaderProgram.cpp ObjParser.cpp Matrix.cpp Quaternion.cpp
+SRC_FILES	= main.cpp ShaderProgram.cpp ObjParser.cpp Matrix.cpp Quaternion.cpp BmpParser.cpp
 
 SRCS		= $(addprefix $(SRC_DIR)/,$(SRC_FILES))
 OBJS		= $(SRCS:%=$(BUILD_DIR)/%.o)
