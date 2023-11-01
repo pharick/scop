@@ -1,7 +1,13 @@
 #ifndef OBJ_PARSER_HPP
 #define OBJ_PARSER_HPP
 
-#include "scop.hpp"
+#include <limits>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <iterator>
+#include <GL/glew.h>
 
 class ObjParser
 {

@@ -1,8 +1,7 @@
+#include <iostream>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include "scop.hpp"
-#include "ObjParser.hpp"
-#include "ShaderProgram.hpp"
-#include "Matrix.hpp"
-#include "Quaternion.hpp"
 
 State state;
 
@@ -15,8 +14,11 @@ static void errorCallback(int error, const char *description)
 void framebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
     (void)window;
-    int x = std::min(width, height);
-    glViewport(width / 2 - x / 2, height / 2 - x / 2, x, x);
+    state.shaderProgram->use();
+    Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
+    glUniformMatrix4fv(state.uniforms.cameraToClipMatrix, 1, GL_FALSE, cameraToClipMatrix.getData());
+    glUseProgram(0);
+    glViewport(0, 0, width, height);
 }
 
 void updateButtonState(bool &buttonState, int action)
@@ -133,17 +135,17 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    ShaderProgram program(SHADER_DIR);
-    program.addShader(GL_VERTEX_SHADER, "shader.vert");
-    program.addShader(GL_FRAGMENT_SHADER, "shader.frag");
+    state.shaderProgram->addShader(GL_VERTEX_SHADER, "shader.vert");
+    state.shaderProgram->addShader(GL_FRAGMENT_SHADER, "shader.frag");
 
     // init uniform variables
-    program.use();
-    GLuint modelToCameraMatrixUniform = program.getUniformLocation("modelToCameraMatrix");
-    GLuint cameraToClipMatrixUniform = program.getUniformLocation("cameraToClipMatrix");
-
-    glUniformMatrix4fv(cameraToClipMatrixUniform, 1, GL_FALSE, Mat4::perspective(45.0f, 1.0f, 0.1f, 100.0f).getData());
+    state.shaderProgram->use();
+    state.uniforms.modelToCameraMatrix = state.shaderProgram->getUniformLocation("modelToCameraMatrix");
+    state.uniforms.cameraToClipMatrix = state.shaderProgram->getUniformLocation("cameraToClipMatrix");
+    Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
+    glUniformMatrix4fv(state.uniforms.cameraToClipMatrix, 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
+    std::cout << state.uniforms.modelToCameraMatrix << " " << state.uniforms.cameraToClipMatrix << std::endl;
 
     // init buffers
     GLuint vbo = obj.getVertexBufferObject();
@@ -185,7 +187,7 @@ int main(int argc, char **argv)
         glClearDepth(1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        program.use();
+        state.shaderProgram->use();
         glBindVertexArray(vao);
 
         Quaternion q = Quaternion::xAxisRotation(state.rotationAnglesState.x) *
@@ -200,23 +202,27 @@ int main(int argc, char **argv)
             ) *
             q.toMatrix() *
             Mat4::translate(state.translationState.x, state.translationState.y, state.translationState.z);
-        glUniformMatrix4fv(modelToCameraMatrixUniform, 1, GL_FALSE, modelToCameraMatrix.getData());
+        glUniformMatrix4fv(state.uniforms.modelToCameraMatrix, 1, GL_FALSE, modelToCameraMatrix.getData());
 
         glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
         glUseProgram(0);
-        
-        updateTranslationPosition(state.translationState, state.buttonsState);
+
         if (state.lastButtonPressTime > 0 && glfwGetTime() - state.lastButtonPressTime < 10.0f)
         {
             updateRotationAngles(state.rotationAnglesState, state.buttonsState);
+            updateTranslationPosition(state.translationState, state.buttonsState);
         }
         else
         {
             state.rotationAnglesState.x = 0.0f;
             state.rotationAnglesState.y = computeRotationAngle(glfwGetTime(), 5.0f);
             state.rotationAnglesState.z = 0.0f;
+            
+            state.translationState.x = 0.0f;
+            state.translationState.y = 0.0f;
+            state.translationState.z = -scaleFactor * 2.0f;
         }
 
         glfwSwapBuffers(window);

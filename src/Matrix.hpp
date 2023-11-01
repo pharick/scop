@@ -1,7 +1,9 @@
 #ifndef MATRIX_HPP
 #define MATRIX_HPP
 
-#include "scop.hpp"
+#include <cstring>
+#include <cmath>
+#include <GL/glew.h>
 
 class Mat4
 {

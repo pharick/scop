@@ -1,7 +1,12 @@
 #ifndef SHADER_PROGRAM_HPP
 #define SHADER_PROGRAM_HPP
 
-#include "scop.hpp"
+#include <vector>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <GL/glew.h>
 
 class ShaderProgram
 {

@@ -1,7 +1,6 @@
 #ifndef QUATERNION_HPP
 #define QUATERNION_HPP
 
-#include "scop.hpp"
 #include "Matrix.hpp"
 
 class Quaternion
