@@ -16,10 +16,12 @@ static void errorCallback(int error, const char *description)
 void framebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
     (void)window;
-    state.shaderProgram->use();
+    
+    state.colorShaderProgram->use();
     Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
-    glUniformMatrix4fv(state.uniforms.cameraToClipMatrix, 1, GL_FALSE, cameraToClipMatrix.getData());
+    state.colorShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
+    
     glViewport(0, 0, width, height);
 }
 
@@ -40,6 +42,8 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+    else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        state.mode = (state.mode == COLOR) ? TEXTURE : COLOR;
     else if (key == GLFW_KEY_W)
         updateButtonState(state.buttonsState.w, action);
     else if (key == GLFW_KEY_S)
@@ -139,15 +143,24 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    state.shaderProgram->addShader(GL_VERTEX_SHADER, "shader.vert");
-    state.shaderProgram->addShader(GL_FRAGMENT_SHADER, "shader.frag");
+    // create shader programs
+    state.colorShaderProgram = new ShaderProgram(SHADER_DIR);
+    state.colorShaderProgram->addShader(GL_VERTEX_SHADER, "color.vert");
+    state.colorShaderProgram->addShader(GL_FRAGMENT_SHADER, "color.frag");
+    
+    state.textureShaderProgram = new ShaderProgram(SHADER_DIR);
+    state.textureShaderProgram->addShader(GL_VERTEX_SHADER, "texture.vert");
+    state.textureShaderProgram->addShader(GL_FRAGMENT_SHADER, "texture.frag");
 
     // init uniform variables
-    state.shaderProgram->use();
-    state.uniforms.modelToCameraMatrix = state.shaderProgram->getUniformLocation("modelToCameraMatrix");
-    state.uniforms.cameraToClipMatrix = state.shaderProgram->getUniformLocation("cameraToClipMatrix");
     Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
-    glUniformMatrix4fv(state.uniforms.cameraToClipMatrix, 1, GL_FALSE, cameraToClipMatrix.getData());
+
+    state.colorShaderProgram->use();
+    state.colorShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
+    glUseProgram(0);
+
+    state.textureShaderProgram->use();
+    state.textureShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
 
     // init buffers
@@ -164,6 +177,7 @@ int main(int argc, char **argv)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBindVertexArray(0);
 
+    // init OpenGL state
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
@@ -173,30 +187,36 @@ int main(int argc, char **argv)
     glDepthFunc(GL_LESS);
     glDepthRange(0.0f, 1.0f);
 
+    // init callbacks
+    glfwSetKeyCallback(window, keyCallback);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
+    // init state
     GLfloat width = obj.getMaxX() - obj.getMinX();
     GLfloat height = obj.getMaxY() - obj.getMinY();
     GLfloat depth = obj.getMaxZ() - obj.getMinZ();
     GLfloat scaleFactor = std::max(std::max(width, height), depth);
-
     state.translationState.z = -scaleFactor * 2.0f;
+    state.texture = new Texture(GL_TEXTURE_2D, "resources/texture.bmp");
 
-    glfwSetKeyCallback(window, keyCallback);
-
+    // main loop
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClearDepth(1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        state.shaderProgram->use();
-        glBindVertexArray(vao);
+        if (state.mode == COLOR)
+            state.colorShaderProgram->use();
+        else if (state.mode == TEXTURE)
+            state.textureShaderProgram->use();
 
+        glBindVertexArray(vao);
+        
+        // calculate model to camera matrix
         Quaternion q = Quaternion::xAxisRotation(state.rotationAnglesState.x) *
                        Quaternion::yAxisRotation(state.rotationAnglesState.y) *
                        Quaternion::zAxisRotation(state.rotationAnglesState.z);
-
         Mat4 modelToCameraMatrix =
             Mat4::translate(
                 -(obj.getMaxX() + obj.getMinX()) / 2.0f,
@@ -205,7 +225,11 @@ int main(int argc, char **argv)
             ) *
             q.toMatrix() *
             Mat4::translate(state.translationState.x, state.translationState.y, state.translationState.z);
-        glUniformMatrix4fv(state.uniforms.modelToCameraMatrix, 1, GL_FALSE, modelToCameraMatrix.getData());
+
+        if (state.mode == COLOR)
+            state.colorShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
+        else
+            state.textureShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
 
         glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
 

@@ -23,7 +23,22 @@ void ShaderProgram::use()
     glUseProgram(_program);
 }
 
-GLuint ShaderProgram::getUniformLocation(const std::string &name) const
+void ShaderProgram::setUniformMatrix4fv(const std::string &name, GLsizei count, GLboolean transpose, const GLfloat *value)
+{
+    GLuint location;
+    if (_uniforms.find(name) == _uniforms.end())
+    {
+        location = _getUniformLocation(name);
+        _uniforms[name] = location;
+    }
+    else
+    {
+        location = _uniforms[name];
+    }
+    glUniformMatrix4fv(location, count, transpose, value);
+}
+
+GLuint ShaderProgram::_getUniformLocation(const std::string &name) const
 {
     return glGetUniformLocation(_program, name.c_str());
 }
@@ -32,7 +47,7 @@ GLuint ShaderProgram::_loadShader(GLenum type, const std::string &filePath)
 {
     std::ifstream shaderFile(filePath.c_str());
     if (!shaderFile.is_open())
-        throw std::runtime_error("Could not fint shader file: " + filePath);
+        throw std::runtime_error("Could not find shader file: " + filePath);
     std::stringstream shaderData;
     shaderData << shaderFile.rdbuf();
     shaderFile.close();

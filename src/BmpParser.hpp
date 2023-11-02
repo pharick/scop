@@ -31,6 +31,9 @@ struct __attribute__ ((__packed__)) BITMAPINFOHEADER {
 class BmpParser
 {
 private:
+    size_t _width;
+    size_t _height;
+    unsigned short _bitsPerPixel;
     unsigned char *_data;
 
     void _parse(const std::string &filename);
@@ -39,6 +42,11 @@ private:
 public:
     BmpParser(const std::string &filename);
     ~BmpParser();
+
+    size_t getWidth() const;
+    size_t getHeight() const;
+    unsigned short getBitsPerPixel() const;
+    const unsigned char *getData() const;
 };
 
 #endif

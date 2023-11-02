@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <map>
 #include <GL/glew.h>
 
 class ShaderProgram
@@ -14,10 +15,12 @@ private:
     std::string         _shaderDir;
     std::vector<GLuint> _shaders;
     GLuint              _program;
+    std::map<std::string, GLuint> _uniforms;
 
     GLuint _loadShader(GLenum type, const std::string &file);
     GLuint _compileShader(GLenum type, const std::string &data);
     GLuint _compileProgram();
+    GLuint _getUniformLocation(const std::string &name) const;
 
 public:
     ShaderProgram(const std::string &shaderDir);
@@ -25,7 +28,7 @@ public:
 
     void addShader(GLenum type, const std::string &file);
     void use();
-    GLuint getUniformLocation(const std::string &name) const;
+    void setUniformMatrix4fv(const std::string &name, GLsizei count, GLboolean transpose, const GLfloat *value);
 };
 
 class ShaderException : public std::exception

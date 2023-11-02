@@ -5,7 +5,7 @@
 #include "Quaternion.hpp"
 #include "ShaderProgram.hpp"
 #include "ObjParser.hpp"
-#include "BmpParser.hpp"
+#include "Texture.hpp"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -14,6 +14,12 @@
 
 #define ROTATION_STEP 0.05f
 #define TRANSLATION_STEP 0.05f
+
+enum Mode
+{
+    COLOR,
+    TEXTURE
+};
 
 struct ButtonsState
 {
@@ -51,23 +57,21 @@ struct TranslationState
     TranslationState() : x(0.0f), y(0.0f), z(0.0f) {}
 };
 
-struct Uniforms
-{
-    GLuint cameraToClipMatrix;
-    GLuint modelToCameraMatrix;
-};
-
 struct State
 {
-    ShaderProgram *shaderProgram;
-    Uniforms uniforms;
+    Mode mode;
+    ShaderProgram *colorShaderProgram;
+    ShaderProgram *textureShaderProgram;
+    Texture *texture;
     ButtonsState buttonsState;
     RotationAnglesState rotationAnglesState;
     TranslationState translationState;
     float lastButtonPressTime;
 
-    State() : shaderProgram(new ShaderProgram(SHADER_DIR)), buttonsState{}, rotationAnglesState{}, lastButtonPressTime{} {}
-    ~State() { delete shaderProgram; }
+    State() : mode(COLOR),
+              buttonsState{},
+              rotationAnglesState{},
+              lastButtonPressTime{} {}
 };
 
 extern State state;
