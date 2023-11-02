@@ -240,9 +240,6 @@ int main(int argc, char **argv)
         {
             state.texture->bind(GL_TEXTURE0);
             state.textureShaderProgram->setUniform1i("textureSampler", 0);
-
-            glEnableVertexAttribArray(1);
-            // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(float)));
         }
 
         glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
