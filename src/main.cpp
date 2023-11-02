@@ -16,10 +16,15 @@ static void errorCallback(int error, const char *description)
 void framebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
     (void)window;
-    
-    state.colorShaderProgram->use();
+
     Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
+
+    state.colorShaderProgram->use();
     state.colorShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
+    glUseProgram(0);
+
+    state.textureShaderProgram->use();
+    state.textureShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
     
     glViewport(0, 0, width, height);
@@ -208,7 +213,7 @@ int main(int argc, char **argv)
 
         if (state.mode == COLOR)
             state.colorShaderProgram->use();
-        else if (state.mode == TEXTURE)
+        else
             state.textureShaderProgram->use();
 
         glBindVertexArray(vao);
@@ -231,7 +236,21 @@ int main(int argc, char **argv)
         else
             state.textureShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
 
+        if (state.mode == TEXTURE)
+        {
+            state.texture->bind(GL_TEXTURE0);
+            state.textureShaderProgram->setUniform1i("textureSampler", 0);
+
+            glEnableVertexAttribArray(1);
+            // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(float)));
+        }
+
         glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
+
+        if (state.mode == TEXTURE)
+        {
+            glDisableVertexAttribArray(1);
+        }
 
         glBindVertexArray(0);
         glUseProgram(0);

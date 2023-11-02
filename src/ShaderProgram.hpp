@@ -20,7 +20,7 @@ private:
     GLuint _loadShader(GLenum type, const std::string &file);
     GLuint _compileShader(GLenum type, const std::string &data);
     GLuint _compileProgram();
-    GLuint _getUniformLocation(const std::string &name) const;
+    GLuint _getUniformLocation(const std::string &name);
 
 public:
     ShaderProgram(const std::string &shaderDir);
@@ -29,6 +29,7 @@ public:
     void addShader(GLenum type, const std::string &file);
     void use();
     void setUniformMatrix4fv(const std::string &name, GLsizei count, GLboolean transpose, const GLfloat *value);
+    void setUniform1i(const std::string &name, GLint value);
 };
 
 class ShaderException : public std::exception

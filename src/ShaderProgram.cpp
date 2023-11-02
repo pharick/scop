@@ -25,22 +25,27 @@ void ShaderProgram::use()
 
 void ShaderProgram::setUniformMatrix4fv(const std::string &name, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
+    glUniformMatrix4fv(_getUniformLocation(name), count, transpose, value);
+}
+
+void ShaderProgram::setUniform1i(const std::string &name, GLint value)
+{
+    glUniform1i(_getUniformLocation(name), value);
+}
+
+GLuint ShaderProgram::_getUniformLocation(const std::string &name)
+{
     GLuint location;
     if (_uniforms.find(name) == _uniforms.end())
     {
-        location = _getUniformLocation(name);
+        location = glGetUniformLocation(_program, name.c_str());
         _uniforms[name] = location;
     }
     else
     {
         location = _uniforms[name];
     }
-    glUniformMatrix4fv(location, count, transpose, value);
-}
-
-GLuint ShaderProgram::_getUniformLocation(const std::string &name) const
-{
-    return glGetUniformLocation(_program, name.c_str());
+    return location;
 }
 
 GLuint ShaderProgram::_loadShader(GLenum type, const std::string &filePath)

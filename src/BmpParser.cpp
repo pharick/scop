@@ -29,6 +29,15 @@ void BmpParser::_parse(const std::string &filename)
     int dataSize = infoHeader.biWidth * infoHeader.biHeight * 3;
     _data = new unsigned char[dataSize];
     file.read(reinterpret_cast<char *>(_data), dataSize);
+
+    // log the first 10 pixels
+    std::cout << "First 10 pixels:" << std::endl;
+    for (int i = 0; i < 10; i++)
+    {
+        std::cout << "R: " << (int)_data[i * 3 + 0] << " "
+                  << "G: " << (int)_data[i * 3 + 1] << " "
+                  << "B: " << (int)_data[i * 3 + 2] << std::endl;
+    }
 }
 
 void BmpParser::_logHeaders(const BITMAPFILEHEADER &fileHeader, const BITMAPINFOHEADER &infoHeader)
