@@ -26,7 +26,7 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height)
     state.textureShaderProgram->use();
     state.textureShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
-    
+
     glViewport(0, 0, width, height);
 }
 
@@ -48,7 +48,8 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-        state.mode = (state.mode == COLOR) ? TEXTURE : COLOR;
+        // cycle through modes
+        state.mode = (Mode)((state.mode + 1) % 4);
     else if (key == GLFW_KEY_W)
         updateButtonState(state.buttonsState.w, action);
     else if (key == GLFW_KEY_S)
@@ -122,10 +123,10 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // choose shader program
-    if (state.mode == COLOR)
-        state.colorShaderProgram->use();
-    else
+    if (state.mode == TEXTURE)
         state.textureShaderProgram->use();
+    else
+        state.colorShaderProgram->use();
 
     // bind vertex array object
     glBindVertexArray(state.vao);
@@ -141,12 +142,12 @@ void display()
         state.rotationAnglesState.x = 0.0f;
         state.rotationAnglesState.y = computeRotationAngle(glfwGetTime(), 5.0f);
         state.rotationAnglesState.z = 0.0f;
-        
+
         state.translationState.x = 0.0f;
         state.translationState.y = 0.0f;
         state.translationState.z = -3.0f;
     }
-    
+
     // calculate world to camera matrix
     Quaternion rotationQuaternion =
         Quaternion::xAxisRotation(state.rotationAnglesState.x) *
@@ -155,25 +156,28 @@ void display()
     Mat4 translationMatrix = Mat4::translate(
         state.translationState.x,
         state.translationState.y,
-        state.translationState.z
-    );
+        state.translationState.z);
     Mat4 worldToCameraMatrix = rotationQuaternion.toMatrix() * translationMatrix;
 
     // set uniform variables
-    if (state.mode == COLOR)
-        state.colorShaderProgram->setUniformMatrix4fv("worldToCameraMatrix", 1, GL_FALSE, worldToCameraMatrix.getData());
-    else
-        state.textureShaderProgram->setUniformMatrix4fv("worldToCameraMatrix", 1, GL_FALSE, worldToCameraMatrix.getData());
-
-    // bind texture
     if (state.mode == TEXTURE)
     {
+        state.textureShaderProgram->setUniformMatrix4fv("worldToCameraMatrix", 1, GL_FALSE, worldToCameraMatrix.getData());
+
+        // bind texture
         state.texture->bind(GL_TEXTURE0);
         state.textureShaderProgram->setUniform1i("textureSampler", 0);
     }
+    else
+    {
+        state.colorShaderProgram->setUniformMatrix4fv("worldToCameraMatrix", 1, GL_FALSE, worldToCameraMatrix.getData());
+    }
 
     // draw
-    glDrawElements(GL_TRIANGLES, state.obj->getIndeces().size(), GL_UNSIGNED_INT, 0);
+    GLenum drawMode = state.mode == POINTS ? GL_POINTS :
+                      state.mode == LINES ? GL_LINES :
+                      GL_TRIANGLES;
+    glDrawElements(drawMode, state.obj->getIndeces().size(), GL_UNSIGNED_INT, 0);
 
     // unbind vertex array object and shader program
     glBindVertexArray(0);
@@ -229,14 +233,12 @@ int main(int argc, char **argv)
     Mat4 translateToOrigin = Mat4::translate(
         -(state.obj->getMaxX() + state.obj->getMinX()) / 2.0f,
         -(state.obj->getMaxY() + state.obj->getMinY()) / 2.0f,
-        -(state.obj->getMaxZ() + state.obj->getMinZ()) / 2.0f
-    );
+        -(state.obj->getMaxZ() + state.obj->getMinZ()) / 2.0f);
     GLfloat maxDimension = std::max(std::max(state.obj->getWidth(), state.obj->getHeight()), state.obj->getDepth());
     Mat4 scaleToUnitCube = Mat4::scale(
         2.0f / maxDimension,
         2.0f / maxDimension,
-        2.0f / maxDimension
-    );
+        2.0f / maxDimension);
     Mat4 modelToWorldMatrix = translateToOrigin * scaleToUnitCube;
     state.colorShaderProgram->use();
     state.colorShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
@@ -264,18 +266,18 @@ int main(int argc, char **argv)
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
-
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
     glDepthRange(0.0f, 1.0f);
+    glPointSize(3.0f);
 
     // init callbacks
     glfwSetKeyCallback(state.window, keyCallback);
     glfwSetFramebufferSizeCallback(state.window, framebufferSizeCallback);
 
     // load texture
-   state.texture->load(GL_TEXTURE_2D);
+    state.texture->load(GL_TEXTURE_2D);
 
     // main loop
     while (!glfwWindowShouldClose(state.window))

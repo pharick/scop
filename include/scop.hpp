@@ -18,7 +18,9 @@
 enum Mode
 {
     COLOR,
-    TEXTURE
+    TEXTURE,
+    POINTS,
+    LINES
 };
 
 struct ButtonsState
