@@ -1,6 +1,6 @@
 #version 330
 
-in vec2 vertTextureCoords;
+smooth in vec2 vertTextureCoords;
 
 out vec4 outputColor;
 

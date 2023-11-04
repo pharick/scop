@@ -28,6 +28,12 @@ struct __attribute__ ((__packed__)) BITMAPINFOHEADER {
     uint32_t biClrImportant;
 };
 
+struct __attribute__ ((__packed__)) RGBQUAD {
+    uint8_t rgbBlue;
+    uint8_t rgbGreen;
+    uint8_t rgbRed;
+};
+
 class BmpParser
 {
 private:

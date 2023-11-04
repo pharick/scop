@@ -26,17 +26,17 @@ void BmpParser::_parse(const std::string &filename)
     // skip to the pixel data
     file.seekg(fileHeader.bfOffBits, std::ios::beg);
 
-    int dataSize = infoHeader.biWidth * infoHeader.biHeight * 3;
+    size_t dataSize = infoHeader.biWidth * infoHeader.biHeight * 3;
     _data = new unsigned char[dataSize];
-    file.read(reinterpret_cast<char *>(_data), dataSize);
 
-    // log the first 10 pixels
-    std::cout << "First 10 pixels:" << std::endl;
-    for (int i = 0; i < 10; i++)
+    // read the pixel data
+    for (size_t i = 0; i < dataSize / 3; i++)
     {
-        std::cout << "R: " << (int)_data[i * 3 + 0] << " "
-                  << "G: " << (int)_data[i * 3 + 1] << " "
-                  << "B: " << (int)_data[i * 3 + 2] << std::endl;
+        RGBQUAD pixel;
+        file.read(reinterpret_cast<char *>(&pixel), sizeof(pixel));
+        _data[i * 3 + 0] = pixel.rgbRed;
+        _data[i * 3 + 1] = pixel.rgbGreen;
+        _data[i * 3 + 2] = pixel.rgbBlue;
     }
 }
 
