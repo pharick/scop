@@ -2,14 +2,16 @@
 
 layout (location = 0) in vec4 position;
 
-uniform mat4 modelToCameraMatrix;
+uniform mat4 modelToWorldMatrix;
+uniform mat4 worldToCameraMatrix;
 uniform mat4 cameraToClipMatrix;
 
 smooth out vec2 vertTextureCoords;
 
 void main()
 {
-    vec4 cameraPos = modelToCameraMatrix * position;
+    vec4 worldPos = modelToWorldMatrix * position;
+    vec4 cameraPos = worldToCameraMatrix * worldPos;
     gl_Position = cameraToClipMatrix * cameraPos;
-    vertTextureCoords = position.yz;
+    vertTextureCoords = worldPos.yz;
 }

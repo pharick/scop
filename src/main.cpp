@@ -131,7 +131,7 @@ void display()
     glBindVertexArray(state.vao);
 
     // update rotation angles and translation position
-    if (state.lastButtonPressTime > 0 && glfwGetTime() - state.lastButtonPressTime < 10.0f)
+    if (state.lastButtonPressTime > 0 && glfwGetTime() - state.lastButtonPressTime < 5.0f)
     {
         updateRotationAngles(state.rotationAnglesState, state.buttonsState);
         updateTranslationPosition(state.translationState, state.buttonsState);
@@ -144,15 +144,10 @@ void display()
         
         state.translationState.x = 0.0f;
         state.translationState.y = 0.0f;
-        state.translationState.z = -std::max(std::max(state.obj->getWidth(), state.obj->getHeight()), state.obj->getDepth()) * 2.0f;
+        state.translationState.z = -3.0f;
     }
     
-    // calculate model to camera matrix
-    Mat4 translateToOrigin = Mat4::translate(
-        -(state.obj->getMaxX() + state.obj->getMinX()) / 2.0f,
-        -(state.obj->getMaxY() + state.obj->getMinY()) / 2.0f,
-        -(state.obj->getMaxZ() + state.obj->getMinZ()) / 2.0f
-    );
+    // calculate world to camera matrix
     Quaternion rotationQuaternion =
         Quaternion::xAxisRotation(state.rotationAnglesState.x) *
         Quaternion::yAxisRotation(state.rotationAnglesState.y) *
@@ -162,14 +157,15 @@ void display()
         state.translationState.y,
         state.translationState.z
     );
-    Mat4 modelToCameraMatrix = translateToOrigin * rotationQuaternion.toMatrix() * translationMatrix;
+    Mat4 worldToCameraMatrix = rotationQuaternion.toMatrix() * translationMatrix;
 
     // set uniform variables
     if (state.mode == COLOR)
-        state.colorShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
+        state.colorShaderProgram->setUniformMatrix4fv("worldToCameraMatrix", 1, GL_FALSE, worldToCameraMatrix.getData());
     else
-        state.textureShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
+        state.textureShaderProgram->setUniformMatrix4fv("worldToCameraMatrix", 1, GL_FALSE, worldToCameraMatrix.getData());
 
+    // bind texture
     if (state.mode == TEXTURE)
     {
         state.texture->bind(GL_TEXTURE0);
@@ -225,13 +221,27 @@ int main(int argc, char **argv)
     state.textureShaderProgram->addShader(GL_VERTEX_SHADER, "texture.vert");
     state.textureShaderProgram->addShader(GL_FRAGMENT_SHADER, "texture.frag");
 
-    // init camera to clip matrix
+    // init camera to clip and model to world matrices
     Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
+    Mat4 translateToOrigin = Mat4::translate(
+        -(state.obj->getMaxX() + state.obj->getMinX()) / 2.0f,
+        -(state.obj->getMaxY() + state.obj->getMinY()) / 2.0f,
+        -(state.obj->getMaxZ() + state.obj->getMinZ()) / 2.0f
+    );
+    GLfloat maxDimension = std::max(std::max(state.obj->getWidth(), state.obj->getHeight()), state.obj->getDepth());
+    Mat4 scaleToUnitCube = Mat4::scale(
+        2.0f / maxDimension,
+        2.0f / maxDimension,
+        2.0f / maxDimension
+    );
+    Mat4 modelToWorldMatrix = translateToOrigin * scaleToUnitCube;
     state.colorShaderProgram->use();
     state.colorShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
+    state.colorShaderProgram->setUniformMatrix4fv("modelToWorldMatrix", 1, GL_FALSE, modelToWorldMatrix.getData());
     glUseProgram(0);
     state.textureShaderProgram->use();
     state.textureShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
+    state.textureShaderProgram->setUniformMatrix4fv("modelToWorldMatrix", 1, GL_FALSE, modelToWorldMatrix.getData());
     glUseProgram(0);
 
     // init buffers
