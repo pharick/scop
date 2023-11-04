@@ -13,7 +13,7 @@
 #define SHADER_DIR "./shaders"
 
 #define ROTATION_STEP 0.05f
-#define TRANSLATION_STEP 0.05f
+#define TRANSLATION_STEP 0.1f
 
 enum Mode
 {
@@ -59,10 +59,15 @@ struct TranslationState
 
 struct State
 {
+    GLFWwindow *window;
     Mode mode;
+    ObjParser *obj;
+    Texture *texture;
     ShaderProgram *colorShaderProgram;
     ShaderProgram *textureShaderProgram;
-    Texture *texture;
+    GLuint vao;
+    GLuint vbo;
+    GLuint ibo;
     ButtonsState buttonsState;
     RotationAnglesState rotationAnglesState;
     TranslationState translationState;

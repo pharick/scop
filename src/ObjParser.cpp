@@ -71,6 +71,21 @@ GLfloat ObjParser::getMaxZ() const
     return _maxZ;
 }
 
+GLfloat ObjParser::getWidth() const
+{
+    return _maxX - _minX;
+}
+
+GLfloat ObjParser::getHeight() const
+{
+    return _maxY - _minY;
+}
+
+GLfloat ObjParser::getDepth() const
+{
+    return _maxZ - _minZ;
+}
+
 void ObjParser::_parse(const std::string &path)
 {
     std::ifstream file(path);

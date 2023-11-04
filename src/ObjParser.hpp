@@ -38,7 +38,9 @@ public:
     GLfloat getMaxY() const;
     GLfloat getMinZ() const;
     GLfloat getMaxZ() const;
-
+    GLfloat getWidth() const;
+    GLfloat getHeight() const;
+    GLfloat getDepth() const;
 };
 
 #endif

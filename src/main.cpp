@@ -3,6 +3,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <unistd.h>
+
 #include "scop.hpp"
 
 State state;
@@ -18,11 +20,9 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height)
     (void)window;
 
     Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
-
     state.colorShaderProgram->use();
     state.colorShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
-
     state.textureShaderProgram->use();
     state.textureShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
@@ -114,32 +114,101 @@ void updateTranslationPosition(TranslationState &translationState, const Buttons
         translationState.z += TRANSLATION_STEP;
 }
 
+void display()
+{
+    // clear buffers
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // choose shader program
+    if (state.mode == COLOR)
+        state.colorShaderProgram->use();
+    else
+        state.textureShaderProgram->use();
+
+    // bind vertex array object
+    glBindVertexArray(state.vao);
+
+    // update rotation angles and translation position
+    if (state.lastButtonPressTime > 0 && glfwGetTime() - state.lastButtonPressTime < 10.0f)
+    {
+        updateRotationAngles(state.rotationAnglesState, state.buttonsState);
+        updateTranslationPosition(state.translationState, state.buttonsState);
+    }
+    else
+    {
+        state.rotationAnglesState.x = 0.0f;
+        state.rotationAnglesState.y = computeRotationAngle(glfwGetTime(), 5.0f);
+        state.rotationAnglesState.z = 0.0f;
+        
+        state.translationState.x = 0.0f;
+        state.translationState.y = 0.0f;
+        state.translationState.z = -std::max(std::max(state.obj->getWidth(), state.obj->getHeight()), state.obj->getDepth()) * 2.0f;
+    }
+    
+    // calculate model to camera matrix
+    Mat4 translateToOrigin = Mat4::translate(
+        -(state.obj->getMaxX() + state.obj->getMinX()) / 2.0f,
+        -(state.obj->getMaxY() + state.obj->getMinY()) / 2.0f,
+        -(state.obj->getMaxZ() + state.obj->getMinZ()) / 2.0f
+    );
+    Quaternion rotationQuaternion =
+        Quaternion::xAxisRotation(state.rotationAnglesState.x) *
+        Quaternion::yAxisRotation(state.rotationAnglesState.y) *
+        Quaternion::zAxisRotation(state.rotationAnglesState.z);
+    Mat4 translationMatrix = Mat4::translate(
+        state.translationState.x,
+        state.translationState.y,
+        state.translationState.z
+    );
+    Mat4 modelToCameraMatrix = translateToOrigin * rotationQuaternion.toMatrix() * translationMatrix;
+
+    // set uniform variables
+    if (state.mode == COLOR)
+        state.colorShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
+    else
+        state.textureShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
+
+    if (state.mode == TEXTURE)
+    {
+        state.texture->bind(GL_TEXTURE0);
+        state.textureShaderProgram->setUniform1i("textureSampler", 0);
+    }
+
+    // draw
+    glDrawElements(GL_TRIANGLES, state.obj->getIndeces().size(), GL_UNSIGNED_INT, 0);
+
+    // unbind vertex array object and shader program
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+    glfwSwapBuffers(state.window);
+    glfwPollEvents();
+}
+
 int main(int argc, char **argv)
 {
+    // load obj file
     if (argc < 2)
         throw std::runtime_error("Usage: " + std::string(argv[0]) + " <obj file>");
+    state.obj = new ObjParser(argv[1]);
 
-    ObjParser obj(argv[1]);
-    BmpParser bmp("resources/texture.bmp");
-
+    // init GLFW and GLEW
     if (!glfwInit())
         return 1;
-
     glfwSetErrorCallback(errorCallback);
-
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-    GLFWwindow *window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "scop", NULL, NULL);
-    if (!window)
+    state.window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "scop", NULL, NULL);
+    if (!state.window)
     {
         glfwTerminate();
         return 1;
     }
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(state.window);
     glfwSwapInterval(1);
-
     GLenum err = glewInit();
     if (err != GLEW_OK)
     {
@@ -152,34 +221,30 @@ int main(int argc, char **argv)
     state.colorShaderProgram = new ShaderProgram(SHADER_DIR);
     state.colorShaderProgram->addShader(GL_VERTEX_SHADER, "color.vert");
     state.colorShaderProgram->addShader(GL_FRAGMENT_SHADER, "color.frag");
-    
     state.textureShaderProgram = new ShaderProgram(SHADER_DIR);
     state.textureShaderProgram->addShader(GL_VERTEX_SHADER, "texture.vert");
     state.textureShaderProgram->addShader(GL_FRAGMENT_SHADER, "texture.frag");
 
-    // init uniform variables
+    // init camera to clip matrix
     Mat4 cameraToClipMatrix = Mat4::perspective(45.0f, (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
-
     state.colorShaderProgram->use();
     state.colorShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
-
     state.textureShaderProgram->use();
     state.textureShaderProgram->setUniformMatrix4fv("cameraToClipMatrix", 1, GL_FALSE, cameraToClipMatrix.getData());
     glUseProgram(0);
 
     // init buffers
-    GLuint vbo = obj.getVertexBufferObject();
-    GLuint ibo = obj.getIndexBufferObject();
+    state.vbo = state.obj->getVertexBufferObject();
+    state.ibo = state.obj->getIndexBufferObject();
 
     // init vertex array object
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glGenVertexArrays(1, &state.vao);
+    glBindVertexArray(state.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, state.vbo);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state.ibo);
     glBindVertexArray(0);
 
     // init OpenGL state
@@ -193,86 +258,17 @@ int main(int argc, char **argv)
     glDepthRange(0.0f, 1.0f);
 
     // init callbacks
-    glfwSetKeyCallback(window, keyCallback);
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetKeyCallback(state.window, keyCallback);
+    glfwSetFramebufferSizeCallback(state.window, framebufferSizeCallback);
 
-    // init state
-    GLfloat width = obj.getMaxX() - obj.getMinX();
-    GLfloat height = obj.getMaxY() - obj.getMinY();
-    GLfloat depth = obj.getMaxZ() - obj.getMinZ();
-    GLfloat scaleFactor = std::max(std::max(width, height), depth);
-    state.translationState.z = -scaleFactor * 2.0f;
+    // load texture
     state.texture = new Texture(GL_TEXTURE_2D, "resources/texture.bmp");
 
     // main loop
-    while (!glfwWindowShouldClose(window))
-    {
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClearDepth(1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    while (!glfwWindowShouldClose(state.window))
+        display();
 
-        if (state.mode == COLOR)
-            state.colorShaderProgram->use();
-        else
-            state.textureShaderProgram->use();
-
-        glBindVertexArray(vao);
-        
-        // calculate model to camera matrix
-        Quaternion q = Quaternion::xAxisRotation(state.rotationAnglesState.x) *
-                       Quaternion::yAxisRotation(state.rotationAnglesState.y) *
-                       Quaternion::zAxisRotation(state.rotationAnglesState.z);
-        Mat4 modelToCameraMatrix =
-            Mat4::translate(
-                -(obj.getMaxX() + obj.getMinX()) / 2.0f,
-                -(obj.getMaxY() + obj.getMinY()) / 2.0f,
-                -(obj.getMaxZ() + obj.getMinZ()) / 2.0f
-            ) *
-            q.toMatrix() *
-            Mat4::translate(state.translationState.x, state.translationState.y, state.translationState.z);
-
-        if (state.mode == COLOR)
-            state.colorShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
-        else
-            state.textureShaderProgram->setUniformMatrix4fv("modelToCameraMatrix", 1, GL_FALSE, modelToCameraMatrix.getData());
-
-        if (state.mode == TEXTURE)
-        {
-            state.texture->bind(GL_TEXTURE0);
-            state.textureShaderProgram->setUniform1i("textureSampler", 0);
-        }
-
-        glDrawElements(GL_TRIANGLES, obj.getIndeces().size(), GL_UNSIGNED_INT, 0);
-
-        if (state.mode == TEXTURE)
-        {
-            glDisableVertexAttribArray(1);
-        }
-
-        glBindVertexArray(0);
-        glUseProgram(0);
-
-        if (state.lastButtonPressTime > 0 && glfwGetTime() - state.lastButtonPressTime < 10.0f)
-        {
-            updateRotationAngles(state.rotationAnglesState, state.buttonsState);
-            updateTranslationPosition(state.translationState, state.buttonsState);
-        }
-        else
-        {
-            state.rotationAnglesState.x = 0.0f;
-            state.rotationAnglesState.y = computeRotationAngle(glfwGetTime(), 5.0f);
-            state.rotationAnglesState.z = 0.0f;
-            
-            state.translationState.x = 0.0f;
-            state.translationState.y = 0.0f;
-            state.translationState.z = -scaleFactor * 2.0f;
-        }
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-    glfwDestroyWindow(window);
+    glfwDestroyWindow(state.window);
     glfwTerminate();
     return 0;
 }
