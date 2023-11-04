@@ -174,9 +174,15 @@ void display()
     // draw
     GLenum drawMode = state.mode == POINTS ? GL_POINTS : GL_TRIANGLES;
     if (state.mode == LINES)
+    {
+        glDisable(GL_CULL_FACE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
     else
+    {
+        glEnable(GL_CULL_FACE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
     glDrawElements(drawMode, state.obj->getIndeces().size(), GL_UNSIGNED_INT, 0);
 
     // unbind vertex array object and shader program
@@ -263,13 +269,13 @@ int main(int argc, char **argv)
     glBindVertexArray(0);
 
     // init OpenGL state
-    glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
     glDepthRange(0.0f, 1.0f);
+    glPointSize(3.0f);
 
     // init callbacks
     glfwSetKeyCallback(state.window, keyCallback);
@@ -284,5 +290,12 @@ int main(int argc, char **argv)
 
     glfwDestroyWindow(state.window);
     glfwTerminate();
+
+    // cleanup
+    delete state.obj;
+    delete state.texture;
+    delete state.colorShaderProgram;
+    delete state.textureShaderProgram;
+
     return 0;
 }
