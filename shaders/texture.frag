@@ -8,5 +8,5 @@ uniform sampler2D textureSampler;
 
 void main()
 {
-    outputColor = texture2D(textureSampler, vertTextureCoords);
+    outputColor = texture(textureSampler, vertTextureCoords);
 }

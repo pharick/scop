@@ -42,11 +42,10 @@ private:
     unsigned short _bitsPerPixel;
     unsigned char *_data;
 
-    void _parse(const std::string &filename);
-    void _logHeaders(const BITMAPFILEHEADER &fileHeader, const BITMAPINFOHEADER &infoHeader);
+    void _parse(const std::string &path);
 
 public:
-    BmpParser(const std::string &filename);
+    BmpParser(const std::string &path);
     ~BmpParser();
 
     size_t getWidth() const;

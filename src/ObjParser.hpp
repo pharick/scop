@@ -7,6 +7,7 @@
 #include <sstream>
 #include <fstream>
 #include <iterator>
+#include <iostream>
 #include <GL/glew.h>
 
 class ObjParser

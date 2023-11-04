@@ -11,12 +11,11 @@ private:
     GLuint _id;
     GLenum _target;
 
-    void _load(GLenum target);
-
 public:
-    Texture(GLenum target, const std::string &filename);
+    Texture(const std::string &filename);
     ~Texture();
 
+    void load(GLenum target);
     void bind(GLenum unit) const;
 };
 

@@ -99,6 +99,12 @@ void ObjParser::_parse(const std::string &path)
         size_t commentPos = line.find('#');
         if (commentPos != std::string::npos)
             line = line.substr(0, commentPos);
+        
+        // remove leading spaces
+        line.erase(0, line.find_first_not_of(" \f\n\r\t\v"));
+        // remove trailing spaces
+        line.erase(line.find_last_not_of(" \f\n\r\t\v") + 1);
+
         if (!line.empty())
             _parseLine(line);
     }

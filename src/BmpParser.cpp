@@ -1,24 +1,35 @@
 #include "BmpParser.hpp"
 
-BmpParser::BmpParser(const std::string &filename)
+BmpParser::BmpParser(const std::string &path)
 {
-    _parse(filename);
+    _parse(path);
 }
 
 BmpParser::~BmpParser() {
     delete[] _data;
 }
 
-void BmpParser::_parse(const std::string &filename)
+void BmpParser::_parse(const std::string &path)
 {
     BITMAPFILEHEADER fileHeader;
     BITMAPINFOHEADER infoHeader;
 
-    std::ifstream file(filename, std::ios::binary);
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open())
+        throw std::runtime_error("Failed to open texture file: " + path);
+
     file.read(reinterpret_cast<char *>(&fileHeader), sizeof(fileHeader));
+
+    // check if the file is a bitmap
+    if (fileHeader.bfType[0] != 'B' || fileHeader.bfType[1] != 'M')
+        throw std::runtime_error("Texture file is not a bitmap: " + path);
+
     file.read(reinterpret_cast<char *>(&infoHeader), sizeof(infoHeader));
 
-    _logHeaders(fileHeader, infoHeader);
+    // check if the file is a 24-bit bitmap
+    if (infoHeader.biBitCount != 24)
+        throw std::runtime_error("Only 24-bit bitmaps supported: " + path);
+
     _width = infoHeader.biWidth;
     _height = infoHeader.biHeight;
     _bitsPerPixel = infoHeader.biBitCount;
@@ -38,29 +49,6 @@ void BmpParser::_parse(const std::string &filename)
         _data[i * 3 + 1] = pixel.rgbGreen;
         _data[i * 3 + 2] = pixel.rgbBlue;
     }
-}
-
-void BmpParser::_logHeaders(const BITMAPFILEHEADER &fileHeader, const BITMAPINFOHEADER &infoHeader)
-{
-    std::cout << "BMP file header:" << std::endl
-              << "bfType: " << fileHeader.bfType[0] << fileHeader.bfType[1] << std::endl
-              << "bfSize: " << fileHeader.bfSize << std::endl
-              << "bfReserved1: " << fileHeader.bfReserved1 << std::endl
-              << "bfReserved2: " << fileHeader.bfReserved2 << std::endl
-              << "bfOffBits: " << fileHeader.bfOffBits << std::endl;
-
-    std::cout << "BMP info header:" << std::endl
-              << "biSize: " << infoHeader.biSize << std::endl
-              << "biWidth: " << infoHeader.biWidth << std::endl
-              << "biHeight: " << infoHeader.biHeight << std::endl
-              << "biPlanes: " << infoHeader.biPlanes << std::endl
-              << "biBitCount: " << infoHeader.biBitCount << std::endl
-              << "biCompression: " << infoHeader.biCompression << std::endl
-              << "biSizeImage: " << infoHeader.biSizeImage << std::endl
-              << "biXPelsPerMeter: " << infoHeader.biXPelsPerMeter << std::endl
-              << "biYPelsPerMeter: " << infoHeader.biYPelsPerMeter << std::endl
-              << "biClrUsed: " << infoHeader.biClrUsed << std::endl
-              << "biClrImportant: " << infoHeader.biClrImportant << std::endl;
 }
 
 size_t BmpParser::getWidth() const

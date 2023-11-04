@@ -190,6 +190,9 @@ int main(int argc, char **argv)
         throw std::runtime_error("Usage: " + std::string(argv[0]) + " <obj file>");
     state.obj = new ObjParser(argv[1]);
 
+    // load texture file
+    state.texture = new Texture("resources/texture.bmp");
+
     // init GLFW and GLEW
     if (!glfwInit())
         return 1;
@@ -272,7 +275,7 @@ int main(int argc, char **argv)
     glfwSetFramebufferSizeCallback(state.window, framebufferSizeCallback);
 
     // load texture
-    state.texture = new Texture(GL_TEXTURE_2D, "resources/texture.bmp");
+   state.texture->load(GL_TEXTURE_2D);
 
     // main loop
     while (!glfwWindowShouldClose(state.window))
