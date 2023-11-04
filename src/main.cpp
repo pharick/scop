@@ -174,9 +174,11 @@ void display()
     }
 
     // draw
-    GLenum drawMode = state.mode == POINTS ? GL_POINTS :
-                      state.mode == LINES ? GL_LINES :
-                      GL_TRIANGLES;
+    GLenum drawMode = state.mode == POINTS ? GL_POINTS : GL_TRIANGLES;
+    if (state.mode == LINES)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glDrawElements(drawMode, state.obj->getIndeces().size(), GL_UNSIGNED_INT, 0);
 
     // unbind vertex array object and shader program
@@ -270,7 +272,6 @@ int main(int argc, char **argv)
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
     glDepthRange(0.0f, 1.0f);
-    glPointSize(3.0f);
 
     // init callbacks
     glfwSetKeyCallback(state.window, keyCallback);
