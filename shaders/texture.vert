@@ -11,5 +11,5 @@ void main()
 {
     vec4 cameraPos = modelToCameraMatrix * position;
     gl_Position = cameraToClipMatrix * cameraPos;
-    vertTextureCoords = vec2(position.y, position.z);
+    vertTextureCoords = position.yz;
 }
