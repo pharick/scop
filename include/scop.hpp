@@ -13,7 +13,7 @@
 #define SHADER_DIR "./shaders"
 
 #define ROTATION_STEP 0.05f
-#define TRANSLATION_STEP 0.1f
+#define TRANSLATION_STEP 0.05f
 
 enum Mode
 {
